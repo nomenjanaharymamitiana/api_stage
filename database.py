@@ -18,10 +18,13 @@ if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 # Modifiez cette ligne dans votre fichier database.py :
+# Remplacez la configuration de votre engine dans database.py par ceci :
 engine = create_engine(
-    DATABASE_URL, 
-    connect_args={"sslmode": "require"} if "supabase.co" in DATABASE_URL else {}
+    DATABASE_URL,
+    connect_args={"sslmode": "require"} if "supabase.co" in DATABASE_URL else {},
+    prepared_statement_cache_size=0  # Obligatoire pour la compatibilité avec le pooler Supabase
 )
+
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
