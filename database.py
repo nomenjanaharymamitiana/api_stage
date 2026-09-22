@@ -17,7 +17,12 @@ DATABASE_URL = os.getenv(
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-engine = create_engine(DATABASE_URL)
+# Modifiez cette ligne dans votre fichier database.py :
+engine = create_engine(
+    DATABASE_URL, 
+    connect_args={"sslmode": "require"} if "supabase.co" in DATABASE_URL else {}
+)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
