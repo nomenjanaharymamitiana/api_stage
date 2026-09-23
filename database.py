@@ -1,4 +1,6 @@
 import os
+from urllib.parse import urlsplit, urlunsplit
+
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -6,12 +8,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Force l'utilisation de la variable propre de l'interface Render en production
-if os.getenv("RENDER"):
-    DATABASE_URL = os.getenv("DATABASE_URL")
-else:
-    # En local : lit le .env local
-    DATABASE_URL = os.getenv("DATABASE_URL")
+# Render et le développement local utilisent la même variable d'environnement.
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Si pour une raison quelconque DATABASE_URL reste vide ou invalide
 if not DATABASE_URL or "@" not in DATABASE_URL:
@@ -24,10 +22,13 @@ DATABASE_URL = DATABASE_URL.strip()
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# Vérification et injection de sécurité pour le port si Render a tronqué l'URL
-if os.getenv("RENDER") and ":5432" not in DATABASE_URL and "oregon-postgres" not in DATABASE_URL:
-    # Recompose l'URL Render au format strict attendu par SQLAlchemy
-    DATABASE_URL = "postgresql://stage_1lk6_user:jsfvbvlWNLkS417GXZ3NDxtQcekFqrfV@://render.com"
+# Certaines configurations peuvent produire un port vide (par exemple `host:/db`).
+# SQLAlchemy accepte l'absence de port, mais pas le séparateur `:` sans valeur.
+parsed_url = urlsplit(DATABASE_URL)
+if parsed_url.netloc.endswith(":"):
+    DATABASE_URL = urlunsplit(
+        parsed_url._replace(netloc=parsed_url.netloc[:-1])
+    )
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
