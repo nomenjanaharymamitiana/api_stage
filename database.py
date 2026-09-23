@@ -6,25 +6,19 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# En local : utilise localhost. Sur Render : lira la variable DATABASE_URL.
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
-    "postgresql://postgres:allerenavant@localhost:5433/ged_db"
-)
+# Récupère l'URL (du .env en local ou de Render en production)
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Correction automatique exigée par SQLAlchemy
-if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+# Si DATABASE_URL n'existe pas du tout, utilise le localhost par défaut
+if not DATABASE_URL:
+    DATABASE_URL = "postgresql://postgres:allerenavant@localhost:5433/ged_db"
+
+# Sécurité imposée par SQLAlchemy (remplace postgres:// par postgresql://)
+if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-connect_arguments = {}
-# Active le SSL uniquement si on se connecte à Supabase
-if "supabase" in DATABASE_URL:
-    connect_arguments["sslmode"] = "require"
-
-engine = create_engine(
-    DATABASE_URL, 
-    connect_args=connect_arguments
-)
+# Configuration de l'engine standard de SQLAlchemy 2.0
+engine = create_engine(DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
